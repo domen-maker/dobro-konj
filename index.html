@@ -97,7 +97,7 @@ function makePdfHtml(v, signature){
 
 document.getElementById('submit').onclick=async()=>{
  const status=document.getElementById('status'), btn=document.getElementById('submit');
- const v={name:name.value.trim(),tax:tax.value.trim(),address:address.value.trim(),post:post.value.trim(),place:place.value.trim(),date:date.value};
+ const v={name:document.getElementById('name').value.trim(),tax:document.getElementById('tax').value.trim(),address:document.getElementById('address').value.trim(),post:document.getElementById('post').value.trim(),place:document.getElementById('place').value.trim(),date:document.getElementById('date').value};
  if(!v.name||!v.tax||!v.address||!v.post||!v.place||!v.date){status.textContent='Izpolnite vsa obvezna polja.';return}
  if(!/^\d{8}$/.test(v.tax)){status.textContent='Davčna številka mora vsebovati 8 številk.';return}
  if(!hasInk){status.textContent='Manjka podpis.';return}
