@@ -101,7 +101,7 @@ async function submitForm(){
   const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
   fd.append('Podpis',blob,'podpis.png');
   try{
-    const r=await fetch('https://formsubmit.co/ajax/domen@bbr.si',{method:'POST',body:fd,headers:{'Accept':'application/json'}});
+    const r=await fetch('/.netlify/functions/oddaj-obrazec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('name').value.trim(),tax:document.getElementById('tax').value.trim(),address:document.getElementById('address').value.trim(),post:document.getElementById('post').value.trim(),place:document.getElementById('place').value.trim(),date:document.getElementById('date').value,signature:canvas.toDataURL('image/png')})});
     const data=await r.json();
     if(r.ok && (data.success===true || data.success==='true')){
       status.textContent='Obrazec je bil uspešno oddan.'; btn.textContent='ODDANO';
