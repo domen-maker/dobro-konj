@@ -43,24 +43,24 @@ exports.handler = async function (event) {
     }
 
     if (!/^\d{8}$/.test(String(b.tax))) {
-      throw new Error("Neveljavna davčna številka.");
+      throw new Error("Neveljavna davcna stevilka.");
     }
 
     // ---------------------------------------------------------
-    // IZDELAVA PDF
+    // IZDELAVA PDF - OBLIKA OBRAZCA
     // ---------------------------------------------------------
 
     const pdfDoc = await PDFDocument.create();
-
     const page = pdfDoc.addPage([595.28, 841.89]);
 
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     const black = rgb(0, 0, 0);
+    const gray = rgb(0.96, 0.96, 0.96);
 
-    function text(txt, x, y, size = 11, useBold = false) {
-      page.drawText(String(txt), {
+    function text(txt, x, y, size = 10, useBold = false) {
+      page.drawText(String(txt ?? ""), {
         x,
         y,
         size,
@@ -69,64 +69,226 @@ exports.handler = async function (event) {
       });
     }
 
+    function line(x1, y1, x2, y2, width = 0.8) {
+      page.drawLine({
+        start: { x: x1, y: y1 },
+        end: { x: x2, y: y2 },
+        thickness: width,
+        color: black,
+      });
+    }
+
+    function box(x, y, width, height, fill = false) {
+      page.drawRectangle({
+        x,
+        y,
+        width,
+        height,
+        borderWidth: 0.8,
+        borderColor: black,
+        ...(fill ? { color: gray } : {}),
+      });
+    }
+
+    function field(label, value, x, y, width) {
+      text(label, x, y + 27, 9, true);
+      box(x, y, width, 23);
+      text(value, x + 7, y + 7, 10, false);
+    }
+
+    const left = 55;
+    const contentWidth = 485;
+
+    // ---------------------------------------------------------
     // NASLOV
+    // ---------------------------------------------------------
+
     text(
-      "OBRAZEC ZA NAMENITEV DELA DOHODNINE ZA DONACIJE",
-      105,
-      785,
-      14,
+      "OBRAZEC za zahtevo za namenitev dela dohodnine za donacije",
+      74,
+      790,
+      13,
       true
     );
 
+    line(left, 775, left + contentWidth, 775, 1);
+
+    // ---------------------------------------------------------
     // PODATKI ZAVEZANCA
-    text("Ime in priimek:", 70, 730, 11, true);
-    text(b.name, 175, 730);
+    // ---------------------------------------------------------
 
-    text("Davcna stevilka:", 70, 705, 11, true);
-    text(b.tax, 175, 705);
-
-    text("Naslov:", 70, 680, 11, true);
-    text(b.address, 175, 680);
-
-    text("Posta:", 70, 655, 11, true);
-    text(b.post, 175, 655);
-
-    text("Kraj:", 70, 630, 11, true);
-    text(b.place, 175, 630);
-
-    text("Datum:", 70, 605, 11, true);
-    text(b.date, 175, 605);
-
-    // UPRAVICENEC
-    text("Upravicenec:", 70, 550, 11, true);
+    box(left, 735, contentWidth, 28, true);
     text(
-      "Drustvo za razvoj slovenskega konjenistva",
-      175,
-      550
+      "VASI PODATKI (podatki zavezanca)",
+      left + 10,
+      744,
+      11,
+      true
     );
 
-    text("Davcna stevilka upravicenca:", 70, 525, 11, true);
-    text("66123615", 245, 525);
+    field(
+      "Ime in priimek",
+      b.name,
+      left,
+      690,
+      contentWidth
+    );
 
-    text("Odstotek:", 70, 500, 11, true);
-    text("1,0 %", 175, 500);
+    field(
+      "Davcna stevilka",
+      b.tax,
+      left,
+      645,
+      contentWidth
+    );
 
+    field(
+      "Naselje, ulica in hisna stevilka",
+      b.address,
+      left,
+      600,
+      contentWidth
+    );
+
+    field(
+      "Postna stevilka in ime poste",
+      b.post,
+      left,
+      555,
+      contentWidth
+    );
+
+    // ---------------------------------------------------------
+    // UPRAVICENEC
+    // ---------------------------------------------------------
+
+    box(left, 505, contentWidth, 28, true);
+    text(
+      "PODATKI O UPRAVICENCU",
+      left + 10,
+      514,
+      11,
+      true
+    );
+
+    // Glava tabele
+    const col1 = 270;
+    const col2 = 125;
+    const col3 = 90;
+
+    box(left, 470, col1, 30, true);
+    box(left + col1, 470, col2, 30, true);
+    box(left + col1 + col2, 470, col3, 30, true);
+
+    text(
+      "Ime oziroma naziv upravicenca",
+      left + 7,
+      481,
+      8,
+      true
+    );
+
+    text(
+      "Davcna stevilka",
+      left + col1 + 7,
+      481,
+      8,
+      true
+    );
+
+    text(
+      "Odstotek (%)",
+      left + col1 + col2 + 7,
+      481,
+      8,
+      true
+    );
+
+    // Vsebina tabele
+    box(left, 425, col1, 45);
+    box(left + col1, 425, col2, 45);
+    box(left + col1 + col2, 425, col3, 45);
+
+    text(
+      "Drustvo za razvoj slovenskega",
+      left + 7,
+      449,
+      9
+    );
+    text(
+      "konjenistva",
+      left + 7,
+      435,
+      9
+    );
+
+    text(
+      "66123615",
+      left + col1 + 20,
+      441,
+      10
+    );
+
+    text(
+      "1,0 %",
+      left + col1 + col2 + 27,
+      441,
+      10
+    );
+
+    // ---------------------------------------------------------
+    // KRAJ IN DATUM
+    // ---------------------------------------------------------
+
+    field(
+      "V/Na (kraj)",
+      b.place,
+      left,
+      355,
+      225
+    );
+
+    field(
+      "Dne (datum)",
+      b.date,
+      left + 260,
+      355,
+      225
+    );
+
+    // ---------------------------------------------------------
     // PODPIS
-    text("Podpis zavezanca:", 70, 435, 11, true);
+    // ---------------------------------------------------------
+
+    text(
+      "Podpis zavezanca",
+      left,
+      320,
+      9,
+      true
+    );
+
+    box(left, 175, contentWidth, 135);
 
     const pngBase64 = String(b.signature).replace(
       /^data:image\/png;base64,/,
       ""
     );
 
-    const signatureBytes = Buffer.from(pngBase64, "base64");
-    const signatureImage = await pdfDoc.embedPng(signatureBytes);
+    const signatureBytes = Buffer.from(
+      pngBase64,
+      "base64"
+    );
+
+    const signatureImage = await pdfDoc.embedPng(
+      signatureBytes
+    );
 
     const originalWidth = signatureImage.width;
     const originalHeight = signatureImage.height;
 
-    const maxWidth = 360;
-    const maxHeight = 110;
+    const maxWidth = 430;
+    const maxHeight = 105;
 
     const scale = Math.min(
       maxWidth / originalWidth,
@@ -137,14 +299,24 @@ exports.handler = async function (event) {
     const sigHeight = originalHeight * scale;
 
     page.drawImage(signatureImage, {
-      x: 70,
-      y: 300,
+      x: left + (contentWidth - sigWidth) / 2,
+      y: 190 + (100 - sigHeight) / 2,
       width: sigWidth,
       height: sigHeight,
     });
 
+    // Spodnja opomba
+    text(
+      "Izpolnjen obrazec za namenitev dela dohodnine za donacije.",
+      left,
+      135,
+      8
+    );
+
     const pdfBytes = await pdfDoc.save();
-    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+    const pdfBase64 = Buffer.from(pdfBytes).toString(
+      "base64"
+    );
 
     // ---------------------------------------------------------
     // E-POSTA
@@ -163,8 +335,10 @@ exports.handler = async function (event) {
       </p>
 
       <p>
-        <b>Upravičenec:</b> Društvo za razvoj slovenskega konjeništva<br>
-        <b>Davčna številka upravičenca:</b> 66123615<br>
+        <b>Upravičenec:</b>
+        Društvo za razvoj slovenskega konjeništva<br>
+        <b>Davčna številka upravičenca:</b>
+        66123615<br>
         <b>Odstotek:</b> 1,0 %
       </p>
 
@@ -173,27 +347,31 @@ exports.handler = async function (event) {
       </p>
     `;
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Obrazec dohodnina <onboarding@resend.dev>",
-        to: ["domen@bbr.si"],
-        subject: "Nova zahteva za namenitev 1 % dohodnine – PDF",
-        html: emailHtml,
+    const response = await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from:
+            "Obrazec dohodnina <onboarding@resend.dev>",
+          to: ["domen@bbr.si"],
+          subject:
+            "Nova zahteva za namenitev 1 % dohodnine – PDF",
+          html: emailHtml,
 
-        // SAMO ENA PRIPONKA
-        attachments: [
-          {
-            filename: "DohDon_obrazec.pdf",
-            content: pdfBase64,
-          },
-        ],
-      }),
-    });
+          attachments: [
+            {
+              filename: "DohDon_obrazec.pdf",
+              content: pdfBase64,
+            },
+          ],
+        }),
+      }
+    );
 
     const result = await response.json();
 
@@ -210,6 +388,7 @@ exports.handler = async function (event) {
       headers,
       body: JSON.stringify({
         ok: true,
+        success: true,
         id: result.id,
       }),
     };
@@ -220,6 +399,7 @@ exports.handler = async function (event) {
       statusCode: 500,
       headers,
       body: JSON.stringify({
+        success: false,
         error: e.message || String(e),
       }),
     };
@@ -227,13 +407,16 @@ exports.handler = async function (event) {
 };
 
 function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, function (c) {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[c];
-  });
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    function (c) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c];
+    }
+  );
 }
