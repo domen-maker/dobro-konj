@@ -2,116 +2,117 @@
 <html lang="sl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OBRAZEC za namenitev dela dohodnine za donacije</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OBRAZEC za zahtevo za namenitev dela dohodnine za donacije</title>
 <style>
-*{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f3f4f6;color:#111}
-.wrap{max-width:900px;margin:24px auto;background:#fff;padding:30px 34px;box-shadow:0 2px 14px #0002}
-h1{text-align:center;font-size:20px;margin:0 0 6px}.sub{text-align:center;font-size:12px;margin-bottom:24px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.full{grid-column:1/-1}
-label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}
-input{width:100%;padding:10px;border:1px solid #999;border-radius:3px;font-size:15px}
-table{width:100%;border-collapse:collapse;margin:22px 0}td,th{border:1px solid #777;padding:9px;font-size:13px;text-align:left}
-.sig-title{font-weight:700;margin-top:18px}canvas{width:100%;height:170px;border:1px solid #777;touch-action:none;background:white}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-button{padding:11px 18px;border:0;border-radius:4px;font-weight:700;cursor:pointer}
-.primary{background:#111;color:#fff}.secondary{background:#ddd}.status{margin-top:12px;font-weight:700}
-.note{font-size:12px;color:#555;margin-top:6px}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.wrap{margin:0;padding:20px}.full{grid-column:auto}}
-@media print{body{background:#fff}.wrap{box-shadow:none;margin:0;max-width:none}.actions,.status,.note{display:none}}
+  *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#111}
+  .page{max-width:820px;margin:22px auto;background:white;padding:34px 40px;box-shadow:0 2px 12px #0002}
+  h1{text-align:center;font-size:24px;margin:0 0 4px} h2{text-align:center;font-size:16px;font-weight:normal;margin:0 0 26px}
+  .section{font-weight:700;margin:22px 0 9px;font-size:15px;border-bottom:2px solid #333;padding-bottom:5px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}.full{grid-column:1/-1}
+  label{display:block;font-size:12px;font-weight:700;margin-bottom:4px}
+  input{width:100%;padding:10px;border:1px solid #777;border-radius:3px;font-size:16px;background:#fff}
+  .recipient{border:1px solid #555;border-collapse:collapse;width:100%;margin-top:6px}.recipient td{border:1px solid #777;padding:10px}.recipient td:first-child{font-weight:bold;width:42%;background:#f4f4f4}
+  .signature-wrap{border:1.5px solid #555;border-radius:3px;background:white;position:relative;touch-action:none}
+  canvas{display:block;width:100%;height:190px;touch-action:none}
+  .hint{font-size:12px;color:#555;margin-top:6px}.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  button{border:0;border-radius:4px;padding:11px 16px;font-size:14px;cursor:pointer;background:#1f5f99;color:white}button.secondary{background:#666}
+  .note{margin-top:18px;font-size:11px;line-height:1.4;color:#444}
+  @media(max-width:650px){.page{margin:0;padding:20px 15px;box-shadow:none}.grid{grid-template-columns:1fr}.full{grid-column:auto}canvas{height:210px}h1{font-size:20px}}
+  @media print{body{background:white}.page{max-width:none;margin:0;padding:8mm 12mm;box-shadow:none}.buttons,.hint{display:none}input{border:0;border-bottom:1px solid #555;border-radius:0;padding:5px 2px}.signature-wrap{height:45mm}canvas{height:44mm}.note{font-size:9px}}
 </style>
 </head>
 <body>
-<div class="wrap" id="paper">
-<h1>OBRAZEC</h1>
-<div class="sub">za namenitev dela dohodnine za donacije</div>
+<div class="page">
+  <h1>OBRAZEC</h1>
+  <h2>za namenitev dela dohodnine za donacije</h2>
 
-<div class="grid">
- <div class="full"><label>Ime in priimek</label><input id="name" autocomplete="name"></div>
- <div><label>Davčna številka</label><input id="tax" inputmode="numeric" maxlength="8"></div>
- <div></div>
- <div class="full"><label>Naselje, ulica in hišna številka</label><input id="address"></div>
- <div class="full"><label>Poštna številka in ime pošte</label><input id="post"></div>
- <div><label>V/Na (kraj)</label><input id="place" value="Ljubljana"></div>
- <div><label>Dne (datum)</label><input id="date" type="date"></div>
+  <div class="section">VAŠI PODATKI (podatki zavezanca)</div>
+  <div class="grid">
+    <div><label>Ime in priimek *</label><input id="name" autocomplete="name" required></div>
+    <div><label>Davčna številka *</label><input id="tax" inputmode="numeric" maxlength="8" required></div>
+    <div class="full"><label>Naselje, ulica in hišna številka *</label><input id="address" autocomplete="street-address" required></div>
+    <div><label>Poštna številka in ime pošte *</label><input id="post" autocomplete="postal-code" required></div>
+  </div>
+
+  <div class="section">NAMENITEV DELA DOHODNINE</div>
+  <table class="recipient">
+    <tr><td>Ime oziroma naziv upravičenca</td><td>Društvo za razvoj slovenskega konjeništva</td></tr>
+    <tr><td>Davčna številka upravičenca</td><td>66123615</td></tr>
+    <tr><td>Odstotek (%)</td><td>1,0 %</td></tr>
+  </table>
+
+  <div class="grid" style="margin-top:20px">
+    <div><label>V/Na (kraj) *</label><input id="place" required value="Ljubljana"></div>
+    <div><label>Dne (datum) *</label><input id="date" type="date" required></div>
+  </div>
+
+  <div class="section">PODPIS ZAVEZANCA/KE * — Podpiši s prstom ali z miško</div>
+  <div class="signature-wrap"><canvas id="sig"></canvas></div>
+  <div class="hint">Na računalniku se podpišite z miško, na telefonu ali tablici pa s prstom oziroma pisalom.</div>
+
+  <div class="buttons">
+    <button type="button" id="submit" style="font-weight:700;font-size:17px;padding:15px 28px;flex:1 1 100%">ODDAJ OBRAZEC</button>
+    <button type="button" id="clear" class="secondary">Izbriši podpis</button>
+  </div>
+  <div id="status" class="hint" style="font-weight:700;margin-top:12px"></div>
+  <div class="note">Obrazec je pripravljen po vsebini obrazca FURS Doh-Don. Kraj in datum sta vključena, ker ju vsebuje uradni obrazec FURS. Podpisno polje omogoča lastnoročni podpis z miško ali dotikom.</div>
+  <div style="margin-top:28px;padding-top:14px;border-top:1px solid #ddd;text-align:center">
+    <button type="button" id="print" class="secondary" style="font-size:12px;padding:8px 12px">Natisni / shrani kot PDF</button>
+  </div>
 </div>
-
-<table>
-<tr><th>Ime oziroma naziv upravičenca</th><th>Davčna številka upravičenca</th><th>Odstotek (%)</th></tr>
-<tr><td>Društvo za razvoj slovenskega konjeništva</td><td>66123615</td><td>1,0 %</td></tr>
-</table>
-
-<div class="sig-title">Podpis zavezanca</div>
-<canvas id="sig"></canvas>
-<div class="note">Podpišite se z miško, prstom ali pisalom.</div>
-
-<div class="actions">
- <button class="secondary" id="clear" type="button">IZBRIŠI PODPIS</button>
- <button class="secondary" type="button" onclick="window.print()">NATISNI / SHRANI PDF</button>
- <button class="primary" id="submit" type="button">ODDAJ OBRAZEC</button>
-</div>
-<div class="status" id="status"></div>
-</div>
-
 <script>
-const canvas=document.getElementById('sig'), ctx=canvas.getContext('2d');
-let drawing=false, hasInk=false;
-function resizeCanvas(){
- const r=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
- const snapshot=hasInk ? canvas.toDataURL() : null;
- canvas.width=Math.round(r.width*dpr); canvas.height=Math.round(r.height*dpr);
- ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle='#111';
- if(snapshot){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);im.src=snapshot;}
-}
-resizeCanvas(); window.addEventListener('resize',resizeCanvas);
-function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
-canvas.addEventListener('pointerdown',e=>{drawing=true;hasInk=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
-canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke()});
-canvas.addEventListener('pointerup',()=>drawing=false); canvas.addEventListener('pointercancel',()=>drawing=false);
+const canvas=document.getElementById('sig'), ctx=canvas.getContext('2d'); let drawing=false, hasInk=false;
+function resize(){const r=canvas.getBoundingClientRect(), dpr=Math.max(window.devicePixelRatio||1,1); const old=hasInk?canvas.toDataURL():null; canvas.width=Math.round(r.width*dpr); canvas.height=Math.round(r.height*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth=2.2;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#111'; if(old){const im=new Image();im.onload=()=>ctx.drawImage(im,0,0,r.width,r.height);im.src=old}}
+function pos(e){const r=canvas.getBoundingClientRect(), p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top}}
+function start(e){e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y)}
+function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasInk=true}
+function end(e){if(drawing){e.preventDefault();drawing=false}}
+['mousedown','touchstart'].forEach(x=>canvas.addEventListener(x,start,{passive:false}));['mousemove','touchmove'].forEach(x=>canvas.addEventListener(x,move,{passive:false}));['mouseup','mouseleave','touchend','touchcancel'].forEach(x=>canvas.addEventListener(x,end,{passive:false}));
+window.addEventListener('resize',resize);resize();
 document.getElementById('clear').onclick=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);hasInk=false};
-
+const placeEl=document.getElementById('place');
+if(!placeEl.value.trim()) placeEl.value='Ljubljana';
+const dateEl=document.getElementById('date');
 const now=new Date();
-document.getElementById('date').value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-window.onerror=function(msg,src,line,col,err){alert('NAPAKA JS: '+msg+' (vrstica '+line+')');};
-function makePdfHtml(v, signature){
- return `<!doctype html><html><head><meta charset="utf-8"><style>
- @page{size:A4;margin:16mm}body{font-family:Arial,sans-serif;color:#111;font-size:12px}
- h1{text-align:center;font-size:17px;margin:0}.sub{text-align:center;margin:4px 0 20px}
- .row{margin:9px 0;border-bottom:1px solid #777;padding:5px 2px}.lbl{font-weight:bold}
- table{width:100%;border-collapse:collapse;margin:22px 0}td,th{border:1px solid #555;padding:8px;text-align:left}
- .sig{margin-top:24px}.sig img{width:280px;max-height:110px;object-fit:contain;object-position:left center}
- </style></head><body>
- <h1>OBRAZEC</h1><div class="sub">za namenitev dela dohodnine za donacije</div>
- <div class="row"><span class="lbl">Ime in priimek:</span> ${esc(v.name)}</div>
- <div class="row"><span class="lbl">Davčna številka:</span> ${esc(v.tax)}</div>
- <div class="row"><span class="lbl">Naslov:</span> ${esc(v.address)}</div>
- <div class="row"><span class="lbl">Pošta:</span> ${esc(v.post)}</div>
- <div class="row"><span class="lbl">Kraj:</span> ${esc(v.place)}</div>
- <div class="row"><span class="lbl">Datum:</span> ${esc(v.date)}</div>
- <table><tr><th>Ime oziroma naziv upravičenca</th><th>Davčna številka upravičenca</th><th>Odstotek</th></tr>
- <tr><td>Društvo za razvoj slovenskega konjeništva</td><td>66123615</td><td>1,0 odstotka</td></tr></table>
- <div class="sig"><b>Podpis zavezanca:</b><br><img src="${signature}"></div>
- </body></html>`;
-}
+const localDate=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+if(!dateEl.value) dateEl.value=localDate;
 
-document.getElementById('submit').onclick=async()=>{
- const status=document.getElementById('status'), btn=document.getElementById('submit');
- const v={name:document.getElementById('name').value.trim(),tax:document.getElementById('tax').value.trim(),address:document.getElementById('address').value.trim(),post:document.getElementById('post').value.trim(),place:document.getElementById('place').value.trim(),date:document.getElementById('date').value};
- if(!v.name||!v.tax||!v.address||!v.post||!v.place||!v.date){status.textContent='Izpolnite vsa obvezna polja.';return}
- if(!/^\d{8}$/.test(v.tax)){status.textContent='Davčna številka mora vsebovati 8 številk.';return}
- if(!hasInk){status.textContent='Manjka podpis.';return}
- btn.disabled=true; btn.textContent='ODDAJAM ...'; status.textContent='';
- try{
-   const signature=canvas.toDataURL('image/png');
-   const payload={...v,signature,pdfHtml:makePdfHtml(v,signature)};
-   const r=await fetch('/.netlify/functions/oddaj-obrazec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-   const data=await r.json().catch(()=>({}));
-   if(!r.ok) throw new Error(data.error||('HTTP '+r.status));
-   btn.textContent='ODDANO'; status.textContent='Obrazec je bil uspešno oddan. PDF s podpisom je bil poslan po e-pošti.';
- }catch(e){
-   btn.disabled=false; btn.textContent='ODDAJ OBRAZEC'; status.textContent='NAPAKA PRI ODDAJI: '+e.message;
- }
-};
+async function submitForm(){
+  const req=['name','tax','address','post','place','date'];
+  for(const id of req){const el=document.getElementById(id);if(!el.value.trim()){alert('Prosimo, izpolnite vsa obvezna polja.');el.focus();return}}
+  if(!/^\d{8}$/.test(document.getElementById('tax').value.trim())){alert('Davčna številka naj vsebuje 8 številk.');document.getElementById('tax').focus();return}
+  if(!hasInk){alert('Prosimo, podpišite se v podpisno polje.');return}
+  const btn=document.getElementById('submit'), status=document.getElementById('status');
+  btn.disabled=true; btn.textContent='ODDAJAM ...'; status.textContent='';
+  const fd=new FormData();
+  fd.append('_subject','Nova zahteva za namenitev 1 % dohodnine');
+  fd.append('_template','table');
+  fd.append('_captcha','false');
+  fd.append('Ime in priimek',document.getElementById('name').value.trim());
+  fd.append('Davčna številka',document.getElementById('tax').value.trim());
+  fd.append('Naslov',document.getElementById('address').value.trim());
+  fd.append('Pošta',document.getElementById('post').value.trim());
+  fd.append('Kraj',document.getElementById('place').value.trim());
+  fd.append('Datum',document.getElementById('date').value);
+  fd.append('Upravičenec','Društvo za razvoj slovenskega konjeništva');
+  fd.append('Davčna številka upravičenca','66123615');
+  fd.append('Odstotek','1,0 %');
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+  fd.append('Podpis',blob,'podpis.png');
+  try{
+    const r=await fetch('https://formsubmit.co/ajax/domen@bbr.si',{method:'POST',body:fd,headers:{'Accept':'application/json'}});
+    const data=await r.json();
+    if(r.ok && (data.success===true || data.success==='true')){
+      status.textContent='Obrazec je bil uspešno oddan.'; btn.textContent='ODDANO';
+    } else {throw new Error('Oddaja ni uspela');}
+  }catch(e){
+    status.textContent='Obrazca ni bilo mogoče poslati. Poskusite znova ali uporabite »Natisni / shrani kot PDF«.';
+    btn.disabled=false; btn.textContent='ODDAJ OBRAZEC';
+  }
+}
+document.getElementById('submit').onclick=submitForm;
+
+document.getElementById('print').onclick=()=>{const req=['name','tax','address','post','place','date'];for(const id of req){const el=document.getElementById(id);if(!el.value.trim()){alert('Prosimo, izpolnite vsa obvezna polja.');el.focus();return}} if(!/^\d{8}$/.test(document.getElementById('tax').value.trim())){alert('Davčna številka naj vsebuje 8 številk.');document.getElementById('tax').focus();return} if(!hasInk){alert('Prosimo, podpišite se v podpisno polje.');return} window.print()};
 </script>
 </body></html>
