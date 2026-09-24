@@ -58,7 +58,7 @@ exports.handler = async function (event) {
 
     // Pisava je v isti mapi kot ta funkcija:
     // netlify/functions/NotoSans-Regular.ttf
-    const fontPath = path.join(__dirname, "NotoSans-Regular.ttf");
+    const fontPath = path.join(__dirname, "..", "..", "NotoSans-Regular.ttf");
     const fontBytes = fs.readFileSync(fontPath);
     const font = await pdfDoc.embedFont(fontBytes, { subset: true });
 
