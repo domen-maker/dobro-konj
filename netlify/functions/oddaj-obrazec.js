@@ -1,4 +1,7 @@
-const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
+const { PDFDocument, rgb } = require("pdf-lib");
+const fontkit = require("@pdf-lib/fontkit");
+const fs = require("fs");
+const path = require("path");
 
 exports.handler = async function (event) {
   const headers = {
@@ -43,28 +46,38 @@ exports.handler = async function (event) {
     }
 
     if (!/^\d{8}$/.test(String(b.tax))) {
-      throw new Error("Neveljavna davcna stevilka.");
+      throw new Error("Neveljavna davčna številka.");
     }
 
     // ---------------------------------------------------------
-    // IZDELAVA PDF - OBLIKA OBRAZCA
+    // IZDELAVA PDF – UNICODE + SLOVENSKI ŠUMNIKI
     // ---------------------------------------------------------
 
     const pdfDoc = await PDFDocument.create();
+    pdfDoc.registerFontkit(fontkit);
+
     const page = pdfDoc.addPage([595.28, 841.89]);
 
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    // Noto Sans podpira č, š, ž, Č, Š, Ž
+    const fontPath = path.join(
+      __dirname,
+      "../../NotoSans-Regular.ttf"
+    );
+
+    const fontBytes = fs.readFileSync(fontPath);
+    const font = await pdfDoc.embedFont(fontBytes, {
+      subset: true,
+    });
 
     const black = rgb(0, 0, 0);
     const gray = rgb(0.96, 0.96, 0.96);
 
-    function text(txt, x, y, size = 10, useBold = false) {
+    function text(txt, x, y, size = 10) {
       page.drawText(String(txt ?? ""), {
         x,
         y,
         size,
-        font: useBold ? bold : font,
+        font,
         color: black,
       });
     }
@@ -91,9 +104,9 @@ exports.handler = async function (event) {
     }
 
     function field(label, value, x, y, width) {
-      text(label, x, y + 27, 9, true);
+      text(label, x, y + 27, 9);
       box(x, y, width, 23);
-      text(value, x + 7, y + 7, 10, false);
+      text(value, x + 7, y + 7, 10);
     }
 
     const left = 55;
@@ -107,8 +120,7 @@ exports.handler = async function (event) {
       "OBRAZEC za zahtevo za namenitev dela dohodnine za donacije",
       74,
       790,
-      13,
-      true
+      13
     );
 
     line(left, 775, left + contentWidth, 775, 1);
@@ -118,12 +130,12 @@ exports.handler = async function (event) {
     // ---------------------------------------------------------
 
     box(left, 735, contentWidth, 28, true);
+
     text(
-      "VASI PODATKI (podatki zavezanca)",
+      "VAŠI PODATKI (podatki zavezanca)",
       left + 10,
       744,
-      11,
-      true
+      11
     );
 
     field(
@@ -135,7 +147,7 @@ exports.handler = async function (event) {
     );
 
     field(
-      "Davcna stevilka",
+      "Davčna številka",
       b.tax,
       left,
       645,
@@ -143,7 +155,7 @@ exports.handler = async function (event) {
     );
 
     field(
-      "Naselje, ulica in hisna stevilka",
+      "Naselje, ulica in hišna številka",
       b.address,
       left,
       600,
@@ -151,7 +163,7 @@ exports.handler = async function (event) {
     );
 
     field(
-      "Postna stevilka in ime poste",
+      "Poštna številka in ime pošte",
       b.post,
       left,
       555,
@@ -159,64 +171,62 @@ exports.handler = async function (event) {
     );
 
     // ---------------------------------------------------------
-    // UPRAVICENEC
+    // PODATKI O UPRAVIČENCU
     // ---------------------------------------------------------
 
     box(left, 505, contentWidth, 28, true);
+
     text(
-      "PODATKI O UPRAVICENCU",
+      "PODATKI O UPRAVIČENCU",
       left + 10,
       514,
-      11,
-      true
+      11
     );
 
-    // Glava tabele
     const col1 = 270;
     const col2 = 125;
     const col3 = 90;
 
+    // Glava tabele
     box(left, 470, col1, 30, true);
     box(left + col1, 470, col2, 30, true);
     box(left + col1 + col2, 470, col3, 30, true);
 
     text(
-      "Ime oziroma naziv upravicenca",
+      "Ime oziroma naziv upravičenca",
       left + 7,
       481,
-      8,
-      true
+      8
     );
 
     text(
-      "Davcna stevilka",
+      "Davčna številka",
       left + col1 + 7,
       481,
-      8,
-      true
+      8
     );
 
     text(
       "Odstotek (%)",
       left + col1 + col2 + 7,
       481,
-      8,
-      true
+      8
     );
 
-    // Vsebina tabele
+    // Podatki upravičenca
     box(left, 425, col1, 45);
     box(left + col1, 425, col2, 45);
     box(left + col1 + col2, 425, col3, 45);
 
     text(
-      "Drustvo za razvoj slovenskega",
+      "Društvo za razvoj slovenskega",
       left + 7,
       449,
       9
     );
+
     text(
-      "konjenistva",
+      "konjeništva",
       left + 7,
       435,
       9
@@ -264,8 +274,7 @@ exports.handler = async function (event) {
       "Podpis zavezanca",
       left,
       320,
-      9,
-      true
+      9
     );
 
     box(left, 175, contentWidth, 135);
@@ -305,7 +314,6 @@ exports.handler = async function (event) {
       height: sigHeight,
     });
 
-    // Spodnja opomba
     text(
       "Izpolnjen obrazec za namenitev dela dohodnine za donacije.",
       left,
@@ -314,12 +322,13 @@ exports.handler = async function (event) {
     );
 
     const pdfBytes = await pdfDoc.save();
+
     const pdfBase64 = Buffer.from(pdfBytes).toString(
       "base64"
     );
 
     // ---------------------------------------------------------
-    // E-POSTA
+    // E-POŠTA
     // ---------------------------------------------------------
 
     const emailHtml = `
@@ -355,12 +364,16 @@ exports.handler = async function (event) {
           Authorization: "Bearer " + apiKey,
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           from:
             "Obrazec dohodnina <onboarding@resend.dev>",
+
           to: ["domen@bbr.si"],
+
           subject:
             "Nova zahteva za namenitev 1 % dohodnine – PDF",
+
           html: emailHtml,
 
           attachments: [
