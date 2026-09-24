@@ -11,27 +11,42 @@ exports.handler = async function (event) {
   };
 
   if (event.httpMethod === "OPTIONS") {
-    return { statusCode: 204, headers, body: "" };
+    return {
+      statusCode: 204,
+      headers,
+      body: "",
+    };
   }
 
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: "Method not allowed" }),
+      body: JSON.stringify({
+        success: false,
+        error: "Method not allowed",
+      }),
     };
   }
 
   try {
+    // ---------------------------------------------------------
+    // 1. API KLJUČ
+    // ---------------------------------------------------------
+
     const apiKey = process.env.RESEND_API_KEY;
 
     if (!apiKey) {
       throw new Error("RESEND_API_KEY ni nastavljen.");
     }
 
+    // ---------------------------------------------------------
+    // 2. PREJEM PODATKOV
+    // ---------------------------------------------------------
+
     const b = JSON.parse(event.body || "{}");
 
-    for (const k of [
+    const required = [
       "name",
       "tax",
       "address",
@@ -39,198 +54,452 @@ exports.handler = async function (event) {
       "place",
       "date",
       "signature",
-    ]) {
-      if (!b[k]) {
-        throw new Error("Manjka podatek: " + k);
+    ];
+
+    for (const key of required) {
+      if (!b[key] || !String(b[key]).trim()) {
+        throw new Error("Manjka podatek: " + key);
       }
     }
 
-    if (!/^\d{8}$/.test(String(b.tax))) {
-      throw new Error("Neveljavna davčna številka.");
+    const tax = String(b.tax).trim();
+
+    if (!/^\d{8}$/.test(tax)) {
+      throw new Error("Davčna številka mora vsebovati 8 številk.");
     }
 
     // ---------------------------------------------------------
-    // IZDELAVA PDF
+    // 3. USTVARJANJE PDF
     // ---------------------------------------------------------
 
     const pdfDoc = await PDFDocument.create();
+
     pdfDoc.registerFontkit(fontkit);
 
-    // Pisava je v isti mapi kot ta funkcija:
-    // netlify/functions/NotoSans-Regular.ttf
-    const fontPath = path.join(__dirname, "..", "..", "NotoSans-Regular.ttf");
+    // NotoSans-Regular.ttf je v korenu GitHub repozitorija.
+    const fontPath = path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "NotoSans-Regular.ttf"
+    );
+
+    if (!fs.existsSync(fontPath)) {
+      throw new Error(
+        "Pisave NotoSans-Regular.ttf ni mogoče najti: " + fontPath
+      );
+    }
+
     const fontBytes = fs.readFileSync(fontPath);
-    const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+
+    // Pisavo vdelamo v celoti - brez subset:true.
+    const font = await pdfDoc.embedFont(fontBytes);
 
     const page = pdfDoc.addPage([595.28, 841.89]);
 
-    const black = rgb(0, 0, 0);
-    const gray = rgb(0.96, 0.96, 0.96);
+    const BLACK = rgb(0, 0, 0);
+    const LIGHT = rgb(0.94, 0.94, 0.94);
+    const WHITE = rgb(1, 1, 1);
 
-    function text(txt, x, y, size = 10) {
-      page.drawText(String(txt ?? ""), {
+    const LEFT = 50;
+    const WIDTH = 495;
+
+    // ---------------------------------------------------------
+    // POMOŽNE FUNKCIJE
+    // ---------------------------------------------------------
+
+    function drawText(value, x, y, size = 10) {
+      page.drawText(String(value ?? ""), {
         x,
         y,
         size,
         font,
-        color: black,
+        color: BLACK,
       });
     }
 
-    function line(x1, y1, x2, y2, width = 0.8) {
-      page.drawLine({
-        start: { x: x1, y: y1 },
-        end: { x: x2, y: y2 },
-        thickness: width,
-        color: black,
+    function drawCentered(value, y, size = 10) {
+      const valueString = String(value ?? "");
+      const textWidth = font.widthOfTextAtSize(
+        valueString,
+        size
+      );
+
+      page.drawText(valueString, {
+        x: (595.28 - textWidth) / 2,
+        y,
+        size,
+        font,
+        color: BLACK,
       });
     }
 
-    function box(x, y, width, height, fill = false) {
+    function rectangle(
+      x,
+      y,
+      width,
+      height,
+      fillColor = WHITE,
+      borderWidth = 0.8
+    ) {
       page.drawRectangle({
         x,
         y,
         width,
         height,
-        borderWidth: 0.8,
-        borderColor: black,
-        ...(fill ? { color: gray } : {}),
+        color: fillColor,
+        borderColor: BLACK,
+        borderWidth,
       });
     }
 
-    function field(label, value, x, y, width) {
-      text(label, x, y + 27, 9);
-      box(x, y, width, 23);
-      text(value, x + 7, y + 7, 10);
+    function sectionTitle(title, y) {
+      rectangle(
+        LEFT,
+        y,
+        WIDTH,
+        28,
+        LIGHT,
+        0.8
+      );
+
+      drawText(
+        title,
+        LEFT + 10,
+        y + 9,
+        10
+      );
     }
 
-    const left = 55;
-    const contentWidth = 485;
+    function field(label, value, x, y, width) {
+      drawText(label, x, y + 29, 8.5);
 
-    // NASLOV
-    text(
-      "OBRAZEC za zahtevo za namenitev dela dohodnine za donacije",
-      74,
+      rectangle(
+        x,
+        y,
+        width,
+        24,
+        WHITE,
+        0.8
+      );
+
+      drawText(
+        value,
+        x + 7,
+        y + 7,
+        10
+      );
+    }
+
+    // ---------------------------------------------------------
+    // 4. NASLOV
+    // ---------------------------------------------------------
+
+    drawCentered(
+      "OBRAZEC",
       790,
-      13
+      15
     );
 
-    line(left, 775, left + contentWidth, 775, 1);
+    drawCentered(
+      "za zahtevo za namenitev dela dohodnine za donacije",
+      770,
+      10
+    );
 
-    // PODATKI ZAVEZANCA
-    box(left, 735, contentWidth, 28, true);
-    text(
+    page.drawLine({
+      start: { x: LEFT, y: 752 },
+      end: { x: LEFT + WIDTH, y: 752 },
+      thickness: 1,
+      color: BLACK,
+    });
+
+    // ---------------------------------------------------------
+    // 5. PODATKI ZAVEZANCA
+    // ---------------------------------------------------------
+
+    sectionTitle(
       "VAŠI PODATKI (podatki zavezanca)",
-      left + 10,
-      744,
-      11
+      710
     );
 
-    field("Ime in priimek", b.name, left, 690, contentWidth);
-    field("Davčna številka", b.tax, left, 645, contentWidth);
+    field(
+      "Ime in priimek",
+      b.name,
+      LEFT,
+      660,
+      WIDTH
+    );
+
+    field(
+      "Davčna številka",
+      tax,
+      LEFT,
+      615,
+      WIDTH
+    );
 
     field(
       "Naselje, ulica in hišna številka",
       b.address,
-      left,
-      600,
-      contentWidth
+      LEFT,
+      570,
+      WIDTH
     );
 
     field(
       "Poštna številka in ime pošte",
       b.post,
-      left,
-      555,
-      contentWidth
+      LEFT,
+      525,
+      WIDTH
     );
 
-    // UPRAVIČENEC
-    box(left, 505, contentWidth, 28, true);
-    text("PODATKI O UPRAVIČENCU", left + 10, 514, 11);
+    // ---------------------------------------------------------
+    // 6. UPRAVIČENEC
+    // ---------------------------------------------------------
 
-    const col1 = 270;
+    sectionTitle(
+      "PODATKI O UPRAVIČENCU",
+      475
+    );
+
+    const col1 = 280;
     const col2 = 125;
     const col3 = 90;
 
-    box(left, 470, col1, 30, true);
-    box(left + col1, 470, col2, 30, true);
-    box(left + col1 + col2, 470, col3, 30, true);
+    // Glava tabele
 
-    text("Ime oziroma naziv upravičenca", left + 7, 481, 8);
-    text("Davčna številka", left + col1 + 7, 481, 8);
-    text("Odstotek (%)", left + col1 + col2 + 7, 481, 8);
+    rectangle(
+      LEFT,
+      438,
+      col1,
+      30,
+      LIGHT
+    );
 
-    box(left, 425, col1, 45);
-    box(left + col1, 425, col2, 45);
-    box(left + col1 + col2, 425, col3, 45);
+    rectangle(
+      LEFT + col1,
+      438,
+      col2,
+      30,
+      LIGHT
+    );
 
-    text(
-      "Društvo za razvoj slovenskega",
-      left + 7,
+    rectangle(
+      LEFT + col1 + col2,
+      438,
+      col3,
+      30,
+      LIGHT
+    );
+
+    drawText(
+      "Ime oziroma naziv upravičenca",
+      LEFT + 7,
       449,
-      9
-    );
-
-    text(
-      "konjeništva",
-      left + 7,
-      435,
-      9
-    );
-
-    text("66123615", left + col1 + 20, 441, 10);
-    text("1,0 %", left + col1 + col2 + 27, 441, 10);
-
-    // KRAJ IN DATUM
-    field("V/Na (kraj)", b.place, left, 355, 225);
-    field("Dne (datum)", b.date, left + 260, 355, 225);
-
-    // PODPIS
-    text("Podpis zavezanca", left, 320, 9);
-    box(left, 175, contentWidth, 135);
-
-    const pngBase64 = String(b.signature).replace(
-      /^data:image\/png;base64,/,
-      ""
-    );
-
-    const signatureBytes = Buffer.from(pngBase64, "base64");
-    const signatureImage = await pdfDoc.embedPng(signatureBytes);
-
-    const originalWidth = signatureImage.width;
-    const originalHeight = signatureImage.height;
-
-    const maxWidth = 430;
-    const maxHeight = 105;
-
-    const scale = Math.min(
-      maxWidth / originalWidth,
-      maxHeight / originalHeight
-    );
-
-    const sigWidth = originalWidth * scale;
-    const sigHeight = originalHeight * scale;
-
-    page.drawImage(signatureImage, {
-      x: left + (contentWidth - sigWidth) / 2,
-      y: 190 + (100 - sigHeight) / 2,
-      width: sigWidth,
-      height: sigHeight,
-    });
-
-    text(
-      "Izpolnjen obrazec za namenitev dela dohodnine za donacije.",
-      left,
-      135,
       8
     );
 
-    const pdfBytes = await pdfDoc.save();
-    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
+    drawText(
+      "Davčna številka",
+      LEFT + col1 + 7,
+      449,
+      8
+    );
+
+    drawText(
+      "Odstotek (%)",
+      LEFT + col1 + col2 + 7,
+      449,
+      8
+    );
+
+    // Vsebina tabele
+
+    rectangle(
+      LEFT,
+      390,
+      col1,
+      48,
+      WHITE
+    );
+
+    rectangle(
+      LEFT + col1,
+      390,
+      col2,
+      48,
+      WHITE
+    );
+
+    rectangle(
+      LEFT + col1 + col2,
+      390,
+      col3,
+      48,
+      WHITE
+    );
+
+    drawText(
+      "Društvo za razvoj slovenskega",
+      LEFT + 7,
+      416,
+      9
+    );
+
+    drawText(
+      "konjeništva",
+      LEFT + 7,
+      401,
+      9
+    );
+
+    drawText(
+      "66123615",
+      LEFT + col1 + 22,
+      407,
+      10
+    );
+
+    drawText(
+      "1,0 %",
+      LEFT + col1 + col2 + 27,
+      407,
+      10
+    );
 
     // ---------------------------------------------------------
-    // E-POŠTA
+    // 7. KRAJ IN DATUM
+    // ---------------------------------------------------------
+
+    field(
+      "V/Na (kraj)",
+      b.place,
+      LEFT,
+      325,
+      235
+    );
+
+    field(
+      "Dne (datum)",
+      b.date,
+      LEFT + 260,
+      325,
+      235
+    );
+
+    // ---------------------------------------------------------
+    // 8. PODPIS
+    // ---------------------------------------------------------
+
+    drawText(
+      "Podpis zavezanca",
+      LEFT,
+      290,
+      9
+    );
+
+    const signatureBoxY = 135;
+    const signatureBoxHeight = 140;
+
+    rectangle(
+      LEFT,
+      signatureBoxY,
+      WIDTH,
+      signatureBoxHeight,
+      WHITE
+    );
+
+    const signatureData = String(
+      b.signature
+    );
+
+    if (
+      !signatureData.startsWith(
+        "data:image/png;base64,"
+      )
+    ) {
+      throw new Error(
+        "Podpis ni v pričakovani PNG obliki."
+      );
+    }
+
+    const pngBase64 =
+      signatureData.replace(
+        /^data:image\/png;base64,/,
+        ""
+      );
+
+    const signatureBytes =
+      Buffer.from(
+        pngBase64,
+        "base64"
+      );
+
+    const signatureImage =
+      await pdfDoc.embedPng(
+        signatureBytes
+      );
+
+    const maxSigWidth = WIDTH - 40;
+    const maxSigHeight =
+      signatureBoxHeight - 30;
+
+    const scale = Math.min(
+      maxSigWidth / signatureImage.width,
+      maxSigHeight / signatureImage.height,
+      1
+    );
+
+    const sigWidth =
+      signatureImage.width * scale;
+
+    const sigHeight =
+      signatureImage.height * scale;
+
+    const sigX =
+      LEFT +
+      (WIDTH - sigWidth) / 2;
+
+    const sigY =
+      signatureBoxY +
+      (signatureBoxHeight - sigHeight) / 2;
+
+    page.drawImage(
+      signatureImage,
+      {
+        x: sigX,
+        y: sigY,
+        width: sigWidth,
+        height: sigHeight,
+      }
+    );
+
+    // ---------------------------------------------------------
+    // 9. SPODNJA OPOMBA
+    // ---------------------------------------------------------
+
+    drawCentered(
+      "Zahteva za namenitev dela dohodnine za donacije",
+      100,
+      8
+    );
+
+    // ---------------------------------------------------------
+    // 10. SHRANJEVANJE PDF
+    // ---------------------------------------------------------
+
+    const pdfBytes =
+      await pdfDoc.save();
+
+    const pdfBase64 =
+      Buffer.from(
+        pdfBytes
+      ).toString("base64");
+
+    // ---------------------------------------------------------
+    // 11. E-POŠTA
     // ---------------------------------------------------------
 
     const emailHtml = `
@@ -238,7 +507,7 @@ exports.handler = async function (event) {
 
       <p>
         <b>Ime in priimek:</b> ${esc(b.name)}<br>
-        <b>Davčna številka:</b> ${esc(b.tax)}<br>
+        <b>Davčna številka:</b> ${esc(tax)}<br>
         <b>Naslov:</b> ${esc(b.address)}<br>
         <b>Pošta:</b> ${esc(b.post)}<br>
         <b>Kraj:</b> ${esc(b.place)}<br>
@@ -246,43 +515,78 @@ exports.handler = async function (event) {
       </p>
 
       <p>
-        <b>Upravičenec:</b> Društvo za razvoj slovenskega konjeništva<br>
-        <b>Davčna številka upravičenca:</b> 66123615<br>
+        <b>Upravičenec:</b>
+        Društvo za razvoj slovenskega konjeništva<br>
+        <b>Davčna številka upravičenca:</b>
+        66123615<br>
         <b>Odstotek:</b> 1,0 %
       </p>
 
-      <p>V priponki je izpolnjen obrazec s podpisom zavezanca.</p>
+      <p>
+        Izpolnjen in podpisan obrazec je priložen
+        temu sporočilu kot PDF.
+      </p>
     `;
 
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Obrazec dohodnina <onboarding@resend.dev>",
-        to: ["domen@bbr.si"],
-        subject: "Nova zahteva za namenitev 1 % dohodnine – PDF",
-        html: emailHtml,
-        attachments: [
-          {
-            filename: "DohDon_obrazec.pdf",
-            content: pdfBase64,
-          },
-        ],
-      }),
-    });
+    const response =
+      await fetch(
+        "https://api.resend.com/emails",
+        {
+          method: "POST",
 
-    const result = await response.json();
+          headers: {
+            Authorization:
+              "Bearer " + apiKey,
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            from:
+              "Obrazec dohodnina <onboarding@resend.dev>",
+
+            to: [
+              "domen@bbr.si",
+            ],
+
+            subject:
+              "Nova zahteva za namenitev 1 % dohodnine",
+
+            html: emailHtml,
+
+            attachments: [
+              {
+                filename:
+                  "DohDon_obrazec.pdf",
+                content:
+                  pdfBase64,
+              },
+            ],
+          }),
+        }
+      );
+
+    let result;
+
+    try {
+      result =
+        await response.json();
+    } catch {
+      result = {};
+    }
 
     if (!response.ok) {
       throw new Error(
         result.message ||
         result.error ||
-        "Resend napaka HTTP " + response.status
+        "Resend napaka HTTP " +
+          response.status
       );
     }
+
+    // ---------------------------------------------------------
+    // 12. USPEŠEN ODGOVOR SPLETNEMU OBRAZCU
+    // ---------------------------------------------------------
 
     return {
       statusCode: 200,
@@ -290,31 +594,47 @@ exports.handler = async function (event) {
       body: JSON.stringify({
         ok: true,
         success: true,
-        id: result.id,
+        id: result.id || null,
       }),
     };
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(
+      "ODDAJ-OBRAZEC ERROR:",
+      error
+    );
 
     return {
       statusCode: 500,
       headers,
       body: JSON.stringify({
+        ok: false,
         success: false,
-        error: e.message || String(e),
+        error:
+          error.message ||
+          String(error),
       }),
     };
   }
 };
 
+
+// -----------------------------------------------------------
+// HTML ESCAPE ZA VSEBINO E-POŠTE
+// -----------------------------------------------------------
+
 function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, function (c) {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[c];
-  });
+  return String(
+    value ?? ""
+  ).replace(
+    /[&<>"']/g,
+    function (character) {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[character];
+    }
+  );
 }
