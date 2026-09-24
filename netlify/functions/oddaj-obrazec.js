@@ -50,24 +50,19 @@ exports.handler = async function (event) {
     }
 
     // ---------------------------------------------------------
-    // IZDELAVA PDF – UNICODE + SLOVENSKI ŠUMNIKI
+    // IZDELAVA PDF
     // ---------------------------------------------------------
 
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(fontkit);
 
-    const page = pdfDoc.addPage([595.28, 841.89]);
-
-    // Noto Sans podpira č, š, ž, Č, Š, Ž
-    const fontPath = path.join(
-      __dirname,
-      "../../NotoSans-Regular.ttf"
-    );
-
+    // Pisava je v isti mapi kot ta funkcija:
+    // netlify/functions/NotoSans-Regular.ttf
+    const fontPath = path.join(__dirname, "NotoSans-Regular.ttf");
     const fontBytes = fs.readFileSync(fontPath);
-    const font = await pdfDoc.embedFont(fontBytes, {
-      subset: true,
-    });
+    const font = await pdfDoc.embedFont(fontBytes, { subset: true });
+
+    const page = pdfDoc.addPage([595.28, 841.89]);
 
     const black = rgb(0, 0, 0);
     const gray = rgb(0.96, 0.96, 0.96);
@@ -112,10 +107,7 @@ exports.handler = async function (event) {
     const left = 55;
     const contentWidth = 485;
 
-    // ---------------------------------------------------------
     // NASLOV
-    // ---------------------------------------------------------
-
     text(
       "OBRAZEC za zahtevo za namenitev dela dohodnine za donacije",
       74,
@@ -125,12 +117,8 @@ exports.handler = async function (event) {
 
     line(left, 775, left + contentWidth, 775, 1);
 
-    // ---------------------------------------------------------
     // PODATKI ZAVEZANCA
-    // ---------------------------------------------------------
-
     box(left, 735, contentWidth, 28, true);
-
     text(
       "VAŠI PODATKI (podatki zavezanca)",
       left + 10,
@@ -138,21 +126,8 @@ exports.handler = async function (event) {
       11
     );
 
-    field(
-      "Ime in priimek",
-      b.name,
-      left,
-      690,
-      contentWidth
-    );
-
-    field(
-      "Davčna številka",
-      b.tax,
-      left,
-      645,
-      contentWidth
-    );
+    field("Ime in priimek", b.name, left, 690, contentWidth);
+    field("Davčna številka", b.tax, left, 645, contentWidth);
 
     field(
       "Naselje, ulica in hišna številka",
@@ -170,50 +145,22 @@ exports.handler = async function (event) {
       contentWidth
     );
 
-    // ---------------------------------------------------------
-    // PODATKI O UPRAVIČENCU
-    // ---------------------------------------------------------
-
+    // UPRAVIČENEC
     box(left, 505, contentWidth, 28, true);
-
-    text(
-      "PODATKI O UPRAVIČENCU",
-      left + 10,
-      514,
-      11
-    );
+    text("PODATKI O UPRAVIČENCU", left + 10, 514, 11);
 
     const col1 = 270;
     const col2 = 125;
     const col3 = 90;
 
-    // Glava tabele
     box(left, 470, col1, 30, true);
     box(left + col1, 470, col2, 30, true);
     box(left + col1 + col2, 470, col3, 30, true);
 
-    text(
-      "Ime oziroma naziv upravičenca",
-      left + 7,
-      481,
-      8
-    );
+    text("Ime oziroma naziv upravičenca", left + 7, 481, 8);
+    text("Davčna številka", left + col1 + 7, 481, 8);
+    text("Odstotek (%)", left + col1 + col2 + 7, 481, 8);
 
-    text(
-      "Davčna številka",
-      left + col1 + 7,
-      481,
-      8
-    );
-
-    text(
-      "Odstotek (%)",
-      left + col1 + col2 + 7,
-      481,
-      8
-    );
-
-    // Podatki upravičenca
     box(left, 425, col1, 45);
     box(left + col1, 425, col2, 45);
     box(left + col1 + col2, 425, col3, 45);
@@ -232,51 +179,15 @@ exports.handler = async function (event) {
       9
     );
 
-    text(
-      "66123615",
-      left + col1 + 20,
-      441,
-      10
-    );
+    text("66123615", left + col1 + 20, 441, 10);
+    text("1,0 %", left + col1 + col2 + 27, 441, 10);
 
-    text(
-      "1,0 %",
-      left + col1 + col2 + 27,
-      441,
-      10
-    );
-
-    // ---------------------------------------------------------
     // KRAJ IN DATUM
-    // ---------------------------------------------------------
+    field("V/Na (kraj)", b.place, left, 355, 225);
+    field("Dne (datum)", b.date, left + 260, 355, 225);
 
-    field(
-      "V/Na (kraj)",
-      b.place,
-      left,
-      355,
-      225
-    );
-
-    field(
-      "Dne (datum)",
-      b.date,
-      left + 260,
-      355,
-      225
-    );
-
-    // ---------------------------------------------------------
     // PODPIS
-    // ---------------------------------------------------------
-
-    text(
-      "Podpis zavezanca",
-      left,
-      320,
-      9
-    );
-
+    text("Podpis zavezanca", left, 320, 9);
     box(left, 175, contentWidth, 135);
 
     const pngBase64 = String(b.signature).replace(
@@ -284,14 +195,8 @@ exports.handler = async function (event) {
       ""
     );
 
-    const signatureBytes = Buffer.from(
-      pngBase64,
-      "base64"
-    );
-
-    const signatureImage = await pdfDoc.embedPng(
-      signatureBytes
-    );
+    const signatureBytes = Buffer.from(pngBase64, "base64");
+    const signatureImage = await pdfDoc.embedPng(signatureBytes);
 
     const originalWidth = signatureImage.width;
     const originalHeight = signatureImage.height;
@@ -322,10 +227,7 @@ exports.handler = async function (event) {
     );
 
     const pdfBytes = await pdfDoc.save();
-
-    const pdfBase64 = Buffer.from(pdfBytes).toString(
-      "base64"
-    );
+    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
     // ---------------------------------------------------------
     // E-POŠTA
@@ -344,55 +246,41 @@ exports.handler = async function (event) {
       </p>
 
       <p>
-        <b>Upravičenec:</b>
-        Društvo za razvoj slovenskega konjeništva<br>
-        <b>Davčna številka upravičenca:</b>
-        66123615<br>
+        <b>Upravičenec:</b> Društvo za razvoj slovenskega konjeništva<br>
+        <b>Davčna številka upravičenca:</b> 66123615<br>
         <b>Odstotek:</b> 1,0 %
       </p>
 
-      <p>
-        V priponki je izpolnjen obrazec s podpisom zavezanca.
-      </p>
+      <p>V priponki je izpolnjen obrazec s podpisom zavezanca.</p>
     `;
 
-    const response = await fetch(
-      "https://api.resend.com/emails",
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + apiKey,
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          from:
-            "Obrazec dohodnina <onboarding@resend.dev>",
-
-          to: ["domen@bbr.si"],
-
-          subject:
-            "Nova zahteva za namenitev 1 % dohodnine – PDF",
-
-          html: emailHtml,
-
-          attachments: [
-            {
-              filename: "DohDon_obrazec.pdf",
-              content: pdfBase64,
-            },
-          ],
-        }),
-      }
-    );
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Obrazec dohodnina <onboarding@resend.dev>",
+        to: ["domen@bbr.si"],
+        subject: "Nova zahteva za namenitev 1 % dohodnine – PDF",
+        html: emailHtml,
+        attachments: [
+          {
+            filename: "DohDon_obrazec.pdf",
+            content: pdfBase64,
+          },
+        ],
+      }),
+    });
 
     const result = await response.json();
 
     if (!response.ok) {
       throw new Error(
         result.message ||
-          result.error ||
-          "Resend napaka HTTP " + response.status
+        result.error ||
+        "Resend napaka HTTP " + response.status
       );
     }
 
@@ -420,16 +308,13 @@ exports.handler = async function (event) {
 };
 
 function esc(value) {
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    function (c) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      }[c];
-    }
-  );
+  return String(value ?? "").replace(/[&<>"']/g, function (c) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[c];
+  });
 }
